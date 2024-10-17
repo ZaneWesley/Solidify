@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"> <!-- no scaling because app has custom scaling feature -->
+	<meta name="author" content="Zane Wesley">
+    <link rel="icon" href="" type="image/png">
+
+    <title>Solidify Notes</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto&display=swap">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
+
+    <style>
+        * {
+            font-family: 'Roboto', sans-serif;
+            box-sizing: border-box;
+            margin: 0;
+        }
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            zoom: 0%;
+            -ms-zoom: 0%;
+        }
+
+        select {
+            position: fixed;
+            top: 1em;
+            left: 1em;
+        }
+
+        select {
+            background-color: #1a1a1a;
+            background-image: url(data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20448%22%20enable-background%3D%22new%200%200%20256%20448%22%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E.arrow%7Bfill%3A%23ffffff%3B%7D%3C%2Fstyle%3E%3Cpath%20class%3D%22arrow%22%20d%3D%22M255.9%20168c0-4.2-1.6-7.9-4.8-11.2-3.2-3.2-6.9-4.8-11.2-4.8H16c-4.2%200-7.9%201.6-11.2%204.8S0%20163.8%200%20168c0%204.4%201.6%208.2%204.8%2011.4l112%20112c3.1%203.1%206.8%204.6%2011.2%204.6%204.4%200%208.2-1.5%2011.4-4.6l112-112c3-3.2%204.5-7%204.5-11.4z%22%2F%3E%3C%2Fsvg%3E%0A);
+            background-position: right 10px center;
+            background-repeat: no-repeat;
+            background-size: auto 50%;
+            border-radius: 2px;
+            border: 1px solid #fff;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 10px 30px 10px 10px;
+            outline: none;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        select::-ms-expand {
+            display: none;
+        }
+
+        /*body:has(select:checked) #precanvas-popup {
+            display: none;
+        }*/
+
+        #precanvas-popup {
+            position: fixed;
+            top: 4em;
+            left: 3em;
+            color: #fff;
+            user-select: none;
+        }
+        #precanvas-popup svg {
+            width: 100px;
+            height: 100px;
+        }
+        #precanvas-popup h2 {
+            margin-top: -0.5em;
+            margin-left: 2em;
+            text-align: center;
+        }
+
+        /* Canvas wrapper to make it viewport-sized */
+        .canvas-wrapper {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* Prevent overflow (to simulate infinite canvas) */
+            position: relative;
+        }
+
+        #container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1); /* Centered at start with no scale */
+            transform-origin: 0 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .container {
+            display: flex;
+        }
+
+        h1 {
+            color: #F4F4F4;
+            margin-top: 1em;
+        }
+
+        .note {
+            position: absolute;
+            background-color: #F4F4F4;
+            min-width: 200px;
+            max-width: 300px;
+            min-height: 50px;
+            padding: 2em 1em 1em 1em;
+            font-size: 15px;
+            cursor: grab;
+            border-radius: 2px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .note .header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .note .header h2, .note .content {
+            cursor: text;
+            outline: none;
+        }
+
+        .note .header h2:focus, .note .content:focus {
+            border: 1px solid #ccc;
+        }
+
+        .note .content {
+            padding: 1em 0;
+        }
+
+        .note .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1em;
+        }
+
+        .note .delete {
+            cursor: pointer;
+            font-size: 12px;
+            color: #1a1a1a;
+            font-weight: bold;
+            margin-right: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .note .delete:hover {
+            color: #000000;
+        }
+
+        .social-icons-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .social-icons-container img {
+            display: block;
+            width: 25px;
+            height: 25px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        .container-buttons {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            color: rgba(244, 244, 244, 0.349);
+            width: 100%;
+            user-select: none;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            align-self: stretch;
+        }
+
+        .control-btn i:hover, .control-btn button:hover {
+            color: #fff;
+        }
+
+        .zoom-controls i, #delete-canvas i {
+            padding: 1em;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        #new-note {
+            font-size: 3em;
+            color: #fff;
+            margin-left: 5px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        #delete-canvas {
+            color: rgba(244, 244, 244, 0.349);
+            font-size: 1em;
+        }
+
+        .note .delete {
+            cursor: pointer;
+            font-size: 1.3em;
+            color: #1a1a1a;
+        }
+
+        .color-picker {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #1a1a1a;
+            border-radius: 50%;
+            padding: 0;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+            padding: 0;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 480px) {
+            
+            #precanvas-popup {
+                top: 2.5em;
+                left: 2em;
+            }
+
+            select {
+                background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%23ffffff%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M0%201.5V13a1%201%200%200%200%201%201V1.5a.5.5%200%200%201%20.5-.5H14a1%201%200%200%200-1-1H1.5A1.5%201.5%200%200%200%200%201.5%22%2F%3E%3Cpath%20d%3D%22M3.5%202A1.5%201.5%200%200%200%202%203.5v11A1.5%201.5%200%200%200%203.5%2016h6.086a1.5%201.5%200%200%200%201.06-.44l4.915-4.914A1.5%201.5%200%200%200%2016%209.586V3.5A1.5%201.5%200%200%200%2014.5%202zm6%208.5a1%201%200%200%201%201-1h4.396a.25.25%200%200%201%20.177.427l-5.146%205.146a.25.25%200%200%201-.427-.177z%22%2F%3E%3C%2Fsvg%3E");
+                border: none;
+                width: 10px;
+                /*font-size: 1.5em;*/
+                transform: scale(1.5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 id="canvasTitle">SOLIDIFY</h1>
+
+    <select id="canvasSelect" onchange="switchCanvas()">
+        <option disabled selected hidden value> Select Canvas</option>
+        <option value="~~newCanvasRequest">Create New</option>
+    </select>
+
+    <div class="canvas-wrapper">
+        <div id="container">
+            <!-- Sticky notes will be dynamically added here -->
+        </div>
+    </div>
+
+    <div class="container-buttons">
+        <div class="control-btn zoom-controls">
+            <div>
+                <i id="zoom-in" class="fa-solid fa-plus"></i>
+                <i id="zoom-out" class="fa-solid fa-minus"></i>
+            </div>
+            Zoom
+        </div>
+        <div class="control-btn">
+            <span id="new-note"><i class="fa-regular fa-note-medical"></i></span>
+            New Idea!
+        </div>
+        <div class="control-btn">
+            <span id="delete-canvas"><i class="fa-solid fa-trash"></i></span>
+            Delete Canvas
+        </div>
+    </div>
+
+    <div id="precanvas-popup">
+        <svg fill="#ffffff" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-92.97 -92.97 1115.60 1115.60" xml:space="preserve" stroke="#ffffff" transform="matrix(1, 0, 0, 1, 0, 0)rotate(-20)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id=""> <g> <path d="M500.84,236.683c13.541,0,27.078-5.207,37.347-15.6c20.379-20.625,20.18-53.866-0.445-74.245L404.471,15.155 c-9.905-9.786-23.325-15.244-37.215-15.154c-13.923,0.083-27.244,5.695-37.03,15.599L200.314,147.08 c-20.379,20.625-20.18,53.866,0.445,74.245c20.625,20.379,53.866,20.18,74.245-0.445l40.618-41.108 c0.021,0.464,0.028,0.927,0.062,1.394c4.178,59.008,4.668,119.832,16.633,177.931c23.938,116.232,103.705,191.961,191.489,264.024 c47.292,38.823,79.66,94.122,98.602,151.673c9.765,29.669,14.714,77.115,17.215,107.157c2.261,27.161,25.08,47.978,52.334,47.709 l1.061-0.011c30.229-0.298,53.811-26.211,51.305-56.336c-2.92-35.149-8.857-89.827-20.924-127.489 c-16.283-50.821-40.016-99.463-74.767-140.245c-33.993-39.893-75.456-72.403-113.338-108.373 c-47.091-44.713-84.977-95.161-98.005-159.719c-10.541-52.231-12.789-105.215-16.461-158.562l43.117,42.604 C474.174,231.638,487.509,236.683,500.84,236.683z"></path> </g> </g></svg>
+        <h2>Select a Canvas<br>to Start!</h2>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
