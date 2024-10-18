@@ -19,20 +19,19 @@
             font-family: 'Roboto', sans-serif;
             box-sizing: border-box;
             margin: 0;
-            overflow: hidden;
         }
         html, body {
             height: 100vh;
             width: 100vw;
             zoom: normal;
-            overflow: hidden;
         }
         body {
             background-color: #1a1a1a;
-            display: flex;
+            display: block;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
             zoom: 0%;
             -ms-zoom: 0%;
         }
@@ -89,7 +88,6 @@
             height: 100vh;
             overflow: hidden; /* Prevent overflow (to simulate infinite canvas) */
             position: relative;
-            flex-grow: 1;
         }
 
         #container {
@@ -106,10 +104,6 @@
 
         .container {
             display: flex;
-        }
-
-        h1, select, .container-buttons {
-            z-index: 99;
         }
 
         h1 {
