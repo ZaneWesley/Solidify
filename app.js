@@ -34,8 +34,9 @@ function saveCanvasToLocalStorage(newCanvasName = currentCanvas) {
     const notes = document.querySelectorAll(".note");
     const notesArray = Array.from(notes).map(note => ({
         id: note.id,
-        title: note.querySelector("h2").innerText,
-        content: note.querySelector(".content").innerText,
+        //content: note.querySelector(".content").innerText,
+        //content: note.querySelector(".content").innerHTML, // Save the Quill editor content as HTML
+        content: note.querySelector(".ql-editor").innerHTML.replace(/(<p><br><\/p>\s*|<p><\/p>\s*)+$/, ''),// remove leading and trailing whitespace and <br>,
         top: note.style.top,
         left: note.style.left,
         color: note.querySelector(".color-picker").value
@@ -164,10 +165,7 @@ function loadNotesFromLocalStorage() {
         newNote.className = "note";
         newNote.id = note.id;
         newNote.innerHTML = `
-            <div class="header">
-                <h2 contenteditable="true">${note.title}</h2>
-            </div>
-            <div class="content" contenteditable="true">${note.content}</div>
+            <div class="content">${note.content}</div>
             <div class="controls">
                 <input type="color" class="color-picker" onchange="changeNoteColor('${note.id}', this.value)" value="${note.color}">
                 <span class="delete" onclick="deleteStickyNote('${note.id}')"><i class="fa-light fa-trash-can"></i></span>
@@ -175,11 +173,44 @@ function loadNotesFromLocalStorage() {
         `;
         newNote.style.top = note.top;
         newNote.style.left = note.left;
-        newNote.style.backgroundColor = note.color;
+        var bgCol = hexToRgb(note.color);
+        newNote.style.borderColor = note.color;
+        newNote.style.backgroundColor = `rgba(${bgCol.r}, ${bgCol.g}, ${bgCol.b}, 0.1)`;
+
         newNote.addEventListener("mousedown", startDrag);
         newNote.addEventListener("touchstart", startDrag);
-        addSaveHandler(newNote);
+        addNoteHandlers(newNote);
         container.appendChild(newNote);
+
+        // Initialize Quill editor with the saved content
+        const quill = new Quill(newNote.querySelector('.content'), {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': 1 }, { 'header': 2 }], // title format
+                    ['bold', 'italic', 'underline', 'link'], // text formatting
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+                    [{ 'script': 'sub'}, { 'script': 'super' }]
+                    //['clean'] // remove formatting button
+                ]
+            }
+        });
+        quill.innerHTML = note.content; // Set the saved HTML content into Quill
+        // display toolbar on edit
+        const quillEditor = newNote.querySelector('.ql-editor');
+        if (quillEditor) {
+            quillEditor.addEventListener('focus', () => {
+                isEditingOrMovingNote = true;
+                isEditingText = true;
+                newNote.querySelector('.ql-toolbar').style.display="block";
+            });
+
+            quillEditor.addEventListener('blur', () => {
+                isEditingOrMovingNote = false;
+                isEditingText = false;
+                //newNote.querySelector('.ql-toolbar').style.display="none";
+            });
+        }
     });
 }
 
@@ -229,15 +260,14 @@ function createStickyNote() {
 
     const container = document.getElementById("container");
     const note = document.createElement("div");
+    let noteColors = ["#81dde9", "#e7e981", "#7edd9a", "#a081e9", "#d281e9", "#e98181", "#e9be81"]; // blue, yellow, green, purple, pink, red, orange
+    let chosenColor = noteColors[Math.floor(Math.random()*noteColors.length)];
     note.className = "note";
     note.id = "note_" + noteId;
     note.innerHTML = `
-            <div class="header">
-                <h2 contenteditable="true" onclick="hidePlaceholder(this, 'New Note')">New Note</h2>
-            </div>
-            <div class="content" contenteditable="true" onclick="hidePlaceholder(this, 'Your note content')">Your note content</div>
+            <div class="content" onclick="hidePlaceholder(this, 'Your note content')"></div>
             <div class="controls">
-                <input type="color" class="color-picker" value="#ffffff" onchange="changeNoteColor('${note.id}', this.value)">
+                <input type="color" class="color-picker" value="${chosenColor}" onchange="changeNoteColor('${note.id}', this.value)">
                 <span class="delete" onclick="deleteStickyNote('${note.id}')"><i class="fa-light fa-trash-can"></i></span>
             </div>
         `;
@@ -253,12 +283,44 @@ function createStickyNote() {
     // Set the new note's position to the calculated center
     note.style.left = `${centerX}px`;
     note.style.top = `${centerY}px`;
+    var bgCol = hexToRgb(chosenColor);
+    note.style.borderColor = chosenColor;
+    note.style.backgroundColor = `rgba(${bgCol.r}, ${bgCol.g}, ${bgCol.b}, 0.1)`;
 
     noteId++;
     note.addEventListener("mousedown", startDrag);
     note.addEventListener("touchstart", startDrag);
-    addSaveHandler(note);
+    addNoteHandlers(note);
     container.appendChild(note);
+
+    // Initialize Quill editor for this note
+    const quill = new Quill(note.querySelector('.content'), {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': 1 }, { 'header': 2 }], // title format
+                ['bold', 'italic', 'underline', 'link'], // text formatting
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+                [{ 'script': 'sub'}, { 'script': 'super' }]
+                //['clean'] // remove formatting button
+            ]
+        }
+    });
+    // display toolbar on edit
+    const quillEditor = note.querySelector('.ql-editor');
+    if (quillEditor) {
+        quillEditor.addEventListener('focus', () => {
+            isEditingOrMovingNote = true;
+            isEditingText = true;
+            note.querySelector('.ql-toolbar').style.display="block";
+        });
+
+        quillEditor.addEventListener('blur', () => {
+            isEditingOrMovingNote = false;
+            isEditingText = false;
+            //note.querySelector('.ql-toolbar').style.display="none";
+        });
+    }
 
     saveCanvasToLocalStorage(); // Save the new note to the current canvas
 }
@@ -284,7 +346,8 @@ function deleteStickyNote(noteId) {
 // Drag functionality for notes
 // Include both note.addEventListener("mousedown", startDrag) and note.addEventListener("touchstart", startDrag);
 function startDrag(event) {
-    let note = event.target;
+
+    let note = event.target.closest('.note');
     let offsetX, offsetY;
     if (event.type === "mousedown") {
         const mouseX = event.clientX;
@@ -302,6 +365,8 @@ function startDrag(event) {
     }
 
     function dragNote(event) {
+        if(isEditingText) return;
+
         if (event.type === "mousemove") {
             note.style.left = (event.clientX - offsetX) + "px";
             note.style.top = (event.clientY - offsetY) + "px";
@@ -325,14 +390,55 @@ function startDrag(event) {
 // Color picker for sticky note background
 function changeNoteColor(noteId, color) {
     const note = document.getElementById(noteId);
-    note.style.backgroundColor = color;
+    var bgCol = hexToRgb(color);
+    note.style.borderColor = color;
+    note.style.backgroundColor = `rgba(${bgCol.r}, ${bgCol.g}, ${bgCol.b}, 0.1)`;
+    //note.style.color = setTextColor(color);
+    console.log(color);
     saveCanvasToLocalStorage();
 }
 
-// Save handler for sticky notes
-function addSaveHandler(elem) {
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+}
+
+/*function setTextColor(bgColor) {
+    var r = bgColor.r * 255,
+        g = bgColor.g * 255,
+        b = bgColor.b * 255;
+    var yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return (yiq >= 128) ? '#000' : '#fff';
+}*/
+
+// Event handler for notes
+function addNoteHandlers(elem) {
+    // Save note after each keystroke
     elem.addEventListener('keyup', function (e) {
         saveCanvasToLocalStorage();
+    });
+    // Quill is for this now
+    // Make content editable on double click
+    /*lem.querySelector('.content').addEventListener('dblclick', function(e) {
+        //e.preventDefault();
+        this.contentEditable=true;
+        this.focus();
+    });
+    // Make content uneditable when blurred
+    elem.querySelector('.content').addEventListener('blur', function(e) {
+        e.preventDefault();
+        this.contentEditable=false;
+    });*/
+    // Display controls on note click
+    // Controls are hidden when canvas is clicked on - in panning event handler
+    elem.addEventListener('click', function(e) {
+        if(!isEditingOrMovingNote) {
+            elem.querySelector('.controls').style.display="flex";
+        }
     });
 }
 
@@ -343,7 +449,8 @@ function addSaveHandler(elem) {
 let scale = 1;
 let translateX = 0, translateY = 0; // Initial pan offsets from center
 let isPanning = false;
-let isEditingOrMovingNote = false; // New flag to disable pan/zoom during note interactions
+let isEditingOrMovingNote = false; // flag to disable pan/zoom during note interactions
+let isEditingText = false;
 let startX, startY;
 let startTouchX, startTouchY;
 let startDistance = 0;
@@ -363,6 +470,12 @@ document.addEventListener("mousedown", function(e) {
     // If the target is inside a note, disable panning
     if (e.target.closest(".note")) {
         isEditingOrMovingNote = true;
+    } else {
+        // If target is outside note, hide note controls
+        document.querySelectorAll('.note .controls').forEach(function(elem) {
+            elem.style.display = "none";
+            elem.parentNode.querySelector('.ql-toolbar').style.display="none";
+        });
     }
 });
 
@@ -411,7 +524,7 @@ canvasWrapper.addEventListener("mouseleave", function() {
 canvasWrapper.addEventListener('wheel', function(e) {
     if (isEditingOrMovingNote || !currentCanvas) return; // Disable zoom if interacting with a note or there is no canvas active
 
-    const zoomFactor = 0.1;
+    const zoomFactor = 0.008;
     if (e.deltaY > 0) {
         scale = Math.max(0.3, scale - zoomFactor); // Zoom out
     } else {
@@ -433,21 +546,30 @@ canvasWrapper.addEventListener("touchstart", function(e) {
         const touch = e.touches[0];
         startTouchX = touch.clientX - translateX;
         startTouchY = touch.clientY - translateY;
+
     }
 });
 
 canvasWrapper.addEventListener("touchmove", function(e) {
     if (isEditingOrMovingNote || !currentCanvas) return; // Disable pan/zoom if interacting with a note or there is no canvas active
 
+    const pinchScaleFactor = 0.002; // Adjusted for smoother pinch-zoom
+
     if (e.touches.length === 2) {
         // Handle pinch-to-zoom
+        e.preventDefault();
+
         const newDistance = getDistance(e.touches[0], e.touches[1]);
         const pinchScale = newDistance / startDistance;
-        scale = Math.min(3, Math.max(0.3, scale * pinchScale)); // Restrict zoom levels
+        scale = Math.min(3, Math.max(0.3, scale * pinchScale * (1 + pinchScaleFactor))); // Restrict zoom levels
         applyTransform();
+
         startDistance = newDistance; // Update for the next move
+
+
     } else if (e.touches.length === 1 && isPanning) {
         // Handle panning with single finger
+        e.preventDefault();
         const touch = e.touches[0];
         translateX = touch.clientX - startTouchX;
         translateY = touch.clientY - startTouchY;
@@ -471,7 +593,10 @@ function getDistance(touch1, touch2) {
 */
 document.getElementById("canvasTitle").addEventListener('dblclick', function(e) {
     e.preventDefault();
-    this.contentEditable=true;
+    if(currentCanvas) {
+        this.contentEditable=true;
+        this.focus();
+    }
 });
 
 document.getElementById("canvasTitle").addEventListener('blur', function(e) {
@@ -489,8 +614,8 @@ document.getElementById("canvasTitle").addEventListener('blur', function(e) {
 
 document.body.addEventListener('keypress', function(e) {
     var titleRestrictedKeys = ["Enter", ">", "<", "\"", "\'", "\`"];
-    // restrict "unsafe" keys in canvas title and disable enter in note titles
-    if((titleRestrictedKeys.includes(e.key) && e.target.tagName.toLowerCase() == "h1") || (e.key == "Enter" && e.target.tagName.toLowerCase() == "h2")) {
+    // restrict "unsafe" keys in canvas title
+    if((titleRestrictedKeys.includes(e.key) && e.target.tagName.toLowerCase() == "h1")) {
         e.preventDefault();
     }
 });
