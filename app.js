@@ -466,6 +466,8 @@ const container = document.getElementById("container");
 // Apply the transform (translation and scaling)
 function applyTransform() {
     container.style.transform = `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px)) scale(${scale})`;
+    window.scrollTo(0, 0);
+    document.body.style.zoom=1.0;
     saveCanvasToLocalStorage();
 }
 
