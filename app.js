@@ -208,6 +208,8 @@ function loadNotesFromLocalStorage() {
             quillEditor.addEventListener('blur', () => {
                 isEditingOrMovingNote = false;
                 isEditingText = false;
+                window.scrollTo(0, 0);
+                document.body.style.zoom=1.0;
                 //newNote.querySelector('.ql-toolbar').style.display="none";
             });
         }
@@ -318,6 +320,8 @@ function createStickyNote() {
         quillEditor.addEventListener('blur', () => {
             isEditingOrMovingNote = false;
             isEditingText = false;
+            window.scrollTo(0, 0);
+            document.body.style.zoom=1.0;
             //note.querySelector('.ql-toolbar').style.display="none";
         });
     }
