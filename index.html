@@ -10,6 +10,9 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto&display=swap">
     <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
+    <!-- Include Quill.js + stylesheet -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
     <style>
         * {
@@ -17,8 +20,10 @@
             box-sizing: border-box;
             margin: 0;
         }
-        html {
-            touch-action: pan-x pan-y;
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            zoom: normal;
         }
         body {
             background-color: #1a1a1a;
@@ -26,7 +31,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
             overflow: hidden;
             zoom: 0%;
             -ms-zoom: 0%;
@@ -53,14 +57,11 @@
             -moz-appearance: none;
             -webkit-appearance: none;
             appearance: none;
+            user-select: none;
         }
         select::-ms-expand {
             display: none;
         }
-
-        /*body:has(select:checked) #precanvas-popup {
-            display: none;
-        }*/
 
         #precanvas-popup {
             position: fixed;
@@ -105,46 +106,42 @@
             color: #F4F4F4;
             margin-top: 1em;
             font-size: 2em;
+            user-select: none;
+            cursor: pointer;
         }
 
         .note {
             position: absolute;
-            background-color: #F4F4F4;
-            min-width: 200px;
-            max-width: 300px;
+            background-color: transparent;
+            border: 3px solid #F4F4F4;
+            color: #F4F4F4;
+            user-select: none;
+            width: 250px;
             min-height: 50px;
-            padding: 2em 1em 1em 1em;
+            padding: 1em;
             font-size: 15px;
             cursor: grab;
-            border-radius: 2px;
+            border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .note .header {
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .note .header h2 {
-            font-size: 1.5em;
-        }
-
-        .note .header h2, .note .content {
+        .note .content[contenteditable="true"] {
             cursor: text;
-            outline: none;
         }
 
-        .note .header h2:focus, .note .content:focus {
+        .note .content:focus {
             border: 1px solid #ccc;
         }
 
         .note .content {
             padding: 1em 0;
-            font-size: 15px;
+            font-size: 20px;
+            cursor: default;
         }
 
         .note .controls {
-            display: flex;
+            /*display: flex;*/
+            display: none;
             justify-content: space-between;
             align-items: center;
             margin-top: 1em;
@@ -152,15 +149,15 @@
 
         .note .delete {
             cursor: pointer;
-            font-size: 12px;
-            color: #1a1a1a;
+            font-size: 1.3em;
+            color: #F4F4F4;
             font-weight: bold;
             margin-right: 5px;
             transition: color 0.3s ease;
         }
 
         .note .delete:hover {
-            color: #000000;
+            color: #ee6060;
         }
 
         .social-icons-container {
@@ -225,18 +222,12 @@
             font-size: 1em;
         }
 
-        .note .delete {
-            cursor: pointer;
-            font-size: 1.3em;
-            color: #1a1a1a;
-        }
-
         .color-picker {
             width: 20px;
             height: 20px;
             border: 2px solid #1a1a1a;
             border-radius: 50%;
-            padding: 0;
+            padding: 1em;
             appearance: none;
             cursor: pointer;
             outline: none;
@@ -250,6 +241,27 @@
             border: none;
             border-radius: 50%;
             padding: 0;
+        }
+
+        /* Quill Retyles */
+        .ql-toolbar {
+            display: none;
+            width: 100%;
+            position: absolute;
+            top: -75px;
+            left: 0;
+            background-color: #1a1a1a;
+            color: #fff!important;
+            border-radius: 10px;
+        }
+        .ql-picker, .ql-stroke, .ql-fill {
+            color: #8c8c8c!important;
+            stroke: #8c8c8c!important;
+            fill: #8c8c8c!important;
+        }
+        .ql-container {
+            border: none!important;
+            width: 100%;
         }
 
         /* Mobile Styles */
