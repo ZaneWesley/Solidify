@@ -39,6 +39,8 @@ function saveCanvasToLocalStorage(newCanvasName = currentCanvas) {
         content: note.querySelector(".ql-editor").innerHTML.replace(/(<p><br><\/p>\s*|<p><\/p>\s*)+$/, ''),// remove leading and trailing whitespace and <br>,
         top: note.style.top,
         left: note.style.left,
+        width: note.style.width,
+        height: note.style.height,
         color: note.querySelector(".color-picker").value
     }));
 
@@ -173,12 +175,12 @@ function loadNotesFromLocalStorage() {
         `;
         newNote.style.top = note.top;
         newNote.style.left = note.left;
+        newNote.style.width = note.width;
+        newNote.style.height = note.height;
         var bgCol = hexToRgb(note.color);
         newNote.style.borderColor = note.color;
         newNote.style.backgroundColor = `rgba(${bgCol.r}, ${bgCol.g}, ${bgCol.b}, 0.1)`;
 
-        newNote.addEventListener("mousedown", startDrag);
-        newNote.addEventListener("touchstart", startDrag);
         addNoteHandlers(newNote);
         container.appendChild(newNote);
 
@@ -290,8 +292,7 @@ function createStickyNote() {
     note.style.backgroundColor = `rgba(${bgCol.r}, ${bgCol.g}, ${bgCol.b}, 0.1)`;
 
     noteId++;
-    note.addEventListener("mousedown", startDrag);
-    note.addEventListener("touchstart", startDrag);
+
     addNoteHandlers(note);
     container.appendChild(note);
 
@@ -344,51 +345,10 @@ function deleteStickyNote(noteId) {
 }
 
 /*
-    *   Canvas Interactions   *
+    *   Note Interactions   *
 */
 
-// Drag functionality for notes
-// Include both note.addEventListener("mousedown", startDrag) and note.addEventListener("touchstart", startDrag);
-function startDrag(event) {
-
-    let note = event.target.closest('.note');
-    let offsetX, offsetY;
-    if (event.type === "mousedown") {
-        const mouseX = event.clientX;
-        const mouseY = event.clientY;
-        offsetX = mouseX - note.offsetLeft;
-        offsetY = mouseY - note.offsetTop;
-        document.addEventListener("mousemove", dragNote);
-        document.addEventListener("mouseup", stopDrag);
-    } else if (event.type === "touchstart") {
-        const touch = event.touches[0];
-        offsetX = touch.clientX - note.offsetLeft;
-        offsetY = touch.clientY - note.offsetTop;
-        document.addEventListener("touchmove", dragNote);
-        document.addEventListener("touchend", stopDrag);
-    }
-
-    function dragNote(event) {
-        if(isEditingText) return;
-
-        if (event.type === "mousemove") {
-            note.style.left = (event.clientX - offsetX) + "px";
-            note.style.top = (event.clientY - offsetY) + "px";
-        } else if (event.type === "touchmove") {
-            const touch = event.touches[0];
-            note.style.left = (touch.clientX - offsetX) + "px";
-            note.style.top = (touch.clientY - offsetY) + "px";
-        }
-    }
-
-    function stopDrag() {
-        document.removeEventListener("mousemove", dragNote);
-        document.removeEventListener("mouseup", stopDrag);
-        document.removeEventListener("touchmove", dragNote);
-        document.removeEventListener("touchend", stopDrag);
-        saveCanvasToLocalStorage();  // Save position changes
-    }
-}
+// Drag functionality for notes is noe in event handlers
 
 
 // Color picker for sticky note background
@@ -425,24 +385,77 @@ function addNoteHandlers(elem) {
     elem.addEventListener('keyup', function (e) {
         saveCanvasToLocalStorage();
     });
-    // Quill is for this now
-    // Make content editable on double click
-    /*lem.querySelector('.content').addEventListener('dblclick', function(e) {
-        //e.preventDefault();
-        this.contentEditable=true;
-        this.focus();
-    });
-    // Make content uneditable when blurred
-    elem.querySelector('.content').addEventListener('blur', function(e) {
-        e.preventDefault();
-        this.contentEditable=false;
-    });*/
-    // Display controls on note click
-    // Controls are hidden when canvas is clicked on - in panning event handler
     elem.addEventListener('click', function(e) {
         if(!isEditingOrMovingNote) {
             elem.querySelector('.controls').style.display="flex";
         }
+    });
+    // Initialize inneract
+    interact(elem)
+    .draggable({
+        inertia: true,
+        modifiers: [
+            interact.modifiers.restrict({
+                //restriction: 'parent', // Restrict drag to parent container
+                endOnly: true
+            })
+        ],
+        listeners: {
+            move(event) {
+                if(isEditingText) return;
+
+                isEditingOrMovingNote = true;
+
+                const target = event.target;
+                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+                // Translate the element
+                target.style.transform = `translate(${x}px, ${y}px)`;
+
+                // Update the position attributes for persistence
+                target.setAttribute('data-x', x);
+                target.setAttribute('data-y', y);
+
+                saveCanvasToLocalStorage();  // Save position to localStorage
+            },
+            end(event) {
+                isEditingOrMovingNote = false;
+            }
+        }
+    })
+    .resizable({
+        edges: { left: false, right: true, bottom: true, top: false },
+        listeners: {
+            move(event) {
+                if(isEditingText) return;
+                
+                isEditingOrMovingNote = true;
+
+                const target = event.target;
+                let { width, height } = event.rect;
+
+                // Apply the new size
+                target.style.width = `${width}px`;
+                target.style.height = `${height}px`;
+
+                // Update width and height attributes for persistence
+                target.setAttribute('data-width', width);
+                target.setAttribute('data-height', height);
+
+                saveCanvasToLocalStorage();  // Save size to localStorage
+            },
+            end(event) {
+                isEditingOrMovingNote = false;
+            }
+        },
+        modifiers: [
+            interact.modifiers.restrictSize({
+                min: { width: 250, height: 150 },
+                max: { width: 800, height: 600 }
+            })
+        ],
+        inertia: true
     });
 }
 
@@ -454,7 +467,7 @@ let scale = 1;
 let translateX = 0, translateY = 0; // Initial pan offsets from center
 let isPanning = false;
 let isEditingOrMovingNote = false; // flag to disable pan/zoom during note interactions
-let isEditingText = false;
+let isEditingText = false; // flag to disable pan/zoom during note editing
 let startX, startY;
 let startTouchX, startTouchY;
 let startDistance = 0;
