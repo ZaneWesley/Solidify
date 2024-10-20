@@ -663,9 +663,17 @@ interact(canvasWrapper)
 
         // Calculate the new scale by multiplying the event.scale with the initial scale
         let newScale = scale + deltaScale;
-
         // Constrain the scale to a reasonable range
         newScale = Math.max(0.3, Math.min(3.0, newScale));
+
+        // Get the midpoint between the fingers in screen coordinates
+        const rect = canvasWrapper.getBoundingClientRect();
+        const midX = (event.touches[0].clientX + event.touches[1].clientX) / 2 - rect.left;
+        const midY = (event.touches[0].clientY + event.touches[1].clientY) / 2 - rect.top;
+
+        // Calculate the new translation to keep the zoom centered on the midpoint, update global x and y vars
+        translateX -= (midX / newScale - midX / startScale);
+        translateY -= (midY / newScale - midY / startScale);
 
         // Update the global scale variable
         scale = newScale;
