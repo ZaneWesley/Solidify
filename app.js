@@ -133,7 +133,7 @@ function switchCanvas() {
         }
     } else if (selectedCanvas) {
         currentCanvas = selectedCanvas;
-        console.log("loading selected canvas:", selectedCanvas, localStorage.getItem(canvasStorageKey));
+        console.log(`Loading canvas "${selectedCanvas}"...`);
         loadNotesFromLocalStorage(); // Load notes for the selected canvas
         saveCanvasToLocalStorage();
     }
@@ -358,7 +358,6 @@ function changeNoteColor(noteId, color) {
     note.style.borderColor = color;
     note.style.backgroundColor = `rgba(${bgCol.r}, ${bgCol.g}, ${bgCol.b}, 0.1)`;
     //note.style.color = setTextColor(color);
-    console.log(color);
     saveCanvasToLocalStorage();
 }
 
@@ -391,8 +390,7 @@ function addNoteHandlers(elem) {
         }
     });
     // Initialize inneract
-    interact(elem)
-    .draggable({
+    interact(elem).draggable({
         inertia: true,
         modifiers: [
             interact.modifiers.restrict({
@@ -407,15 +405,21 @@ function addNoteHandlers(elem) {
                 isEditingOrMovingNote = true;
 
                 const target = event.target;
-                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                // Calculate the new left and top positions
+                const deltaX = event.dx;
+                const deltaY = event.dy;
 
-                // Translate the element
-                target.style.transform = `translate(${x}px, ${y}px)`;
+                // Get the starting position from the data attributes set during 'start'
+                const startX = parseFloat(target.getAttribute('startX')) || target.style.left;
+                const startY = parseFloat(target.getAttribute('startY'))|| target.style.top;
 
-                // Update the position attributes for persistence
-                target.setAttribute('data-x', x);
-                target.setAttribute('data-y', y);
+                // Apply the updated position to the element's left and top
+                target.style.left = `${startX + deltaX}px`;
+                target.style.top = `${startY + deltaY}px`;
+
+                // Update the dataset to ensure smooth continuation of the drag operation
+                target.setAttribute('startX', startX + deltaX);
+                target.setAttribute('startY', startY + deltaY);
 
                 saveCanvasToLocalStorage();  // Save position to localStorage
             },
@@ -423,42 +427,44 @@ function addNoteHandlers(elem) {
                 isEditingOrMovingNote = false;
             }
         }
-    })
-    .resizable({
-        edges: { left: false, right: true, bottom: true, top: false },
-        listeners: {
-            move(event) {
-                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                
-                if(isEditingText || isTouchDevice) return;
-                
-                isEditingOrMovingNote = true;
-
-                const target = event.target;
-                let { width, height } = event.rect;
-
-                // Apply the new size
-                target.style.width = `${width}px`;
-                target.style.height = `${height}px`;
-
-                // Update width and height attributes for persistence
-                target.setAttribute('data-width', width);
-                target.setAttribute('data-height', height);
-
-                saveCanvasToLocalStorage();  // Save size to localStorage
-            },
-            end(event) {
-                isEditingOrMovingNote = false;
-            }
-        },
-        modifiers: [
-            interact.modifiers.restrictSize({
-                min: { width: 250, height: 150 },
-                max: { width: 800, height: 600 }
-            })
-        ],
-        inertia: true
     });
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if(!isTouchDevice) {
+        interact(elem).resizable({
+            edges: { left: false, right: true, bottom: true, top: false },
+            listeners: {
+                move(event) {
+                    
+                    if(isEditingText) return;
+                    
+                    isEditingOrMovingNote = true;
+    
+                    const target = event.target;
+                    let { width, height } = event.rect;
+    
+                    // Apply the new size
+                    target.style.width = `${width}px`;
+                    target.style.height = `${height}px`;
+    
+                    // Update width and height attributes for persistence
+                    target.setAttribute('data-width', width);
+                    target.setAttribute('data-height', height);
+    
+                    saveCanvasToLocalStorage();  // Save size to localStorage
+                },
+                end(event) {
+                    isEditingOrMovingNote = false;
+                }
+            },
+            modifiers: [
+                interact.modifiers.restrictSize({
+                    min: { width: 250, height: 150 },
+                    max: { width: 800, height: 600 }
+                })
+            ],
+            inertia: true
+        });
+    }
 }
 
 /*
@@ -593,7 +599,6 @@ canvasWrapper.addEventListener("touchmove", function(e) {
 
         const newDistance = getDistance(e.touches[0], e.touches[1]);
         const pinchScale = newDistance / startDistance;
-        console.log(pinchScale);
         scale = Math.min(3, Math.max(0.3, scale * pinchScale * ( pinchScaleFactor))); // Restrict zoom levels
         applyTransform();
 
