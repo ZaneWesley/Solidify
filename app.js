@@ -428,7 +428,9 @@ function addNoteHandlers(elem) {
         edges: { left: false, right: true, bottom: true, top: false },
         listeners: {
             move(event) {
-                if(isEditingText) return;
+                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                
+                if(isEditingText || isTouchDevice) return;
                 
                 isEditingOrMovingNote = true;
 
@@ -543,12 +545,23 @@ canvasWrapper.addEventListener("mouseleave", function() {
 canvasWrapper.addEventListener('wheel', function(e) {
     if (isEditingOrMovingNote || !currentCanvas) return; // Disable zoom if interacting with a note or there is no canvas active
 
-    const zoomFactor = 0.008;
+    const zoomFactor = -0.003;
+    // Get the mouse position relative to the container
+    const rect = canvasWrapper.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / scale;
+    const mouseY = (e.clientY - rect.top) / scale;
+
+    // Adjust scale
     if (e.deltaY > 0) {
         scale = Math.max(0.3, scale - zoomFactor); // Zoom out
     } else {
-        scale = Math.min(3, scale + zoomFactor);   // Zoom in
+        scale = Math.min(3, scale + zoomFactor); // Zoom in
     }
+
+    // Calculate the new translation values to zoom around the mouse position
+    translateX -= (mouseX * zoomFactor * (e.deltaY > 0 ? 1 : -1));
+    translateY -= (mouseY * zoomFactor * (e.deltaY > 0 ? 1 : -1));
+
     applyTransform();
 });
 
@@ -580,7 +593,8 @@ canvasWrapper.addEventListener("touchmove", function(e) {
 
         const newDistance = getDistance(e.touches[0], e.touches[1]);
         const pinchScale = newDistance / startDistance;
-        scale = Math.min(3, Math.max(0.3, scale * pinchScale * (1 + pinchScaleFactor))); // Restrict zoom levels
+        console.log(pinchScale);
+        scale = Math.min(3, Math.max(0.3, scale * pinchScale * ( pinchScaleFactor))); // Restrict zoom levels
         applyTransform();
 
         startDistance = newDistance; // Update for the next move
@@ -604,7 +618,8 @@ canvasWrapper.addEventListener("touchend", function() {
 function getDistance(touch1, touch2) {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
+    //return Math.sqrt(dx * dx + dy * dy);
+    return Math.hypot(dx, dy);
 }
 
 /*
