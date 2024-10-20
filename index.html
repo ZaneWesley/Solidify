@@ -8,15 +8,17 @@
 
     <title>Solidify Notes</title>
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
     <!-- Include Quill.js + stylesheet -->
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <!-- Interact -->
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 
     <style>
         * {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Inter', sans-serif;
             box-sizing: border-box;
             margin: 0;
         }
@@ -24,6 +26,7 @@
             height: 100vh;
             width: 100vw;
             zoom: normal;
+            overflow: hidden;
         }
         body {
             background-color: #1a1a1a;
@@ -31,7 +34,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
             zoom: 0%;
             -ms-zoom: 0%;
         }
@@ -65,21 +67,39 @@
         }
 
         #precanvas-popup {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #select-popup {
             position: fixed;
             top: 4em;
             left: 3em;
             color: #fff;
-            user-select: none;
-            -webkit-user-select: none;
         }
-        #precanvas-popup svg {
+        #select-popup svg {
             width: 100px;
             height: 100px;
         }
-        #precanvas-popup h2 {
+        #select-popup h2 {
             margin-top: -0.5em;
             margin-left: 2em;
             text-align: center;
+        }
+
+        #info-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background-color: #363838;
+            color: #d2d3d3;
+            padding: 1em;
+            border-radius: 10px;
+        }
+        #info-popup p {
+            padding: 10px 0;
         }
 
         /* Canvas wrapper to make it viewport-sized */
@@ -106,14 +126,16 @@
             display: flex;
         }
 
-        h1 {
+        h1#canvasTitle {
             color: #F4F4F4;
-            margin-top: 1em;
+            background-color: #121212;
+            padding: 0.5em 0;
             font-size: 2em;
             user-select: none;
             -webkit-user-select: none;
             cursor: pointer;
             text-align: center;
+            width: 100%;
         }
 
         .note {
@@ -196,7 +218,7 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            background-color: #1a1a1a;
+            background-color: #121212;
         }
 
         .control-btn {
@@ -218,7 +240,7 @@
         }
 
         #new-note {
-            font-size: 3em;
+            font-size: 2em;
             color: #fff;
             margin-left: 5px;
             margin-right: 10px;
@@ -251,16 +273,6 @@
             padding: 0;
         }
 
-        #backScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            background-color: transparent;
-        }
-
         /* Quill Retyles */
         .ql-toolbar {
             display: none;
@@ -285,7 +297,7 @@
         /* Mobile Styles */
         @media (max-width: 480px) {
             
-            #precanvas-popup {
+            #select-popup {
                 top: 2.5em;
                 left: 2em;
             }
@@ -320,24 +332,30 @@
                 <i id="zoom-in" class="fa-solid fa-plus"></i>
                 <i id="zoom-out" class="fa-solid fa-minus"></i>
             </div>
-            Zoom
+            <!--Zoom -->
         </div>
         <div class="control-btn">
             <span id="new-note"><i class="fa-regular fa-note-medical"></i></span>
-            New Idea!
+            <!-- New Idea! -->
         </div>
         <div class="control-btn">
             <span id="delete-canvas"><i class="fa-solid fa-trash"></i></span>
-            Delete Canvas
+            <!-- Delete Canvas -->
         </div>
     </div>
 
     <div id="precanvas-popup">
-        <svg fill="#ffffff" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-92.97 -92.97 1115.60 1115.60" xml:space="preserve" stroke="#ffffff" transform="matrix(1, 0, 0, 1, 0, 0)rotate(-20)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id=""> <g> <path d="M500.84,236.683c13.541,0,27.078-5.207,37.347-15.6c20.379-20.625,20.18-53.866-0.445-74.245L404.471,15.155 c-9.905-9.786-23.325-15.244-37.215-15.154c-13.923,0.083-27.244,5.695-37.03,15.599L200.314,147.08 c-20.379,20.625-20.18,53.866,0.445,74.245c20.625,20.379,53.866,20.18,74.245-0.445l40.618-41.108 c0.021,0.464,0.028,0.927,0.062,1.394c4.178,59.008,4.668,119.832,16.633,177.931c23.938,116.232,103.705,191.961,191.489,264.024 c47.292,38.823,79.66,94.122,98.602,151.673c9.765,29.669,14.714,77.115,17.215,107.157c2.261,27.161,25.08,47.978,52.334,47.709 l1.061-0.011c30.229-0.298,53.811-26.211,51.305-56.336c-2.92-35.149-8.857-89.827-20.924-127.489 c-16.283-50.821-40.016-99.463-74.767-140.245c-33.993-39.893-75.456-72.403-113.338-108.373 c-47.091-44.713-84.977-95.161-98.005-159.719c-10.541-52.231-12.789-105.215-16.461-158.562l43.117,42.604 C474.174,231.638,487.509,236.683,500.84,236.683z"></path> </g> </g></svg>
-        <h2>Select a Canvas<br>to Start!</h2>
+        <div id="select-popup">
+            <svg fill="#ffffff" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-92.97 -92.97 1115.60 1115.60" xml:space="preserve" stroke="#ffffff" transform="matrix(1, 0, 0, 1, 0, 0)rotate(-20)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id=""> <g> <path d="M500.84,236.683c13.541,0,27.078-5.207,37.347-15.6c20.379-20.625,20.18-53.866-0.445-74.245L404.471,15.155 c-9.905-9.786-23.325-15.244-37.215-15.154c-13.923,0.083-27.244,5.695-37.03,15.599L200.314,147.08 c-20.379,20.625-20.18,53.866,0.445,74.245c20.625,20.379,53.866,20.18,74.245-0.445l40.618-41.108 c0.021,0.464,0.028,0.927,0.062,1.394c4.178,59.008,4.668,119.832,16.633,177.931c23.938,116.232,103.705,191.961,191.489,264.024 c47.292,38.823,79.66,94.122,98.602,151.673c9.765,29.669,14.714,77.115,17.215,107.157c2.261,27.161,25.08,47.978,52.334,47.709 l1.061-0.011c30.229-0.298,53.811-26.211,51.305-56.336c-2.92-35.149-8.857-89.827-20.924-127.489 c-16.283-50.821-40.016-99.463-74.767-140.245c-33.993-39.893-75.456-72.403-113.338-108.373 c-47.091-44.713-84.977-95.161-98.005-159.719c-10.541-52.231-12.789-105.215-16.461-158.562l43.117,42.604 C474.174,231.638,487.509,236.683,500.84,236.683z"></path> </g> </g></svg>
+            <h2>Select a Canvas<br>to Start!</h2>
+        </div>
+        <div id="info-popup">
+            <p>Cick/Tap and drag to pan</p>
+            <p>Scroll/Pinch to zoom</p>
+            <p>Drag from top of note to move</p>
+            <p>Drag from left or bottom of note to resize</p>
+        </div>
     </div>
-
-    <div id="backScreen"></div>
 
     <script src="app.js"></script>
 </body>
