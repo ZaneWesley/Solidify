@@ -548,7 +548,7 @@ canvasWrapper.addEventListener("mouseleave", function() {
 });
 
 // Zoom with mouse wheel (desktop)
-canvasWrapper.addEventListener('wheel', function(e) {
+/*canvasWrapper.addEventListener('wheel', function(e) {
     if (isEditingOrMovingNote || !currentCanvas) return; // Disable zoom if interacting with a note or there is no canvas active
 
     const zoomFactor = -0.003;
@@ -569,7 +569,7 @@ canvasWrapper.addEventListener('wheel', function(e) {
     translateY -= (mouseY * zoomFactor * (e.deltaY > 0 ? 1 : -1));
 
     applyTransform();
-});
+});*/
 
 // Touch-based panning and pinch-to-zoom
 canvasWrapper.addEventListener("touchstart", function(e) {
@@ -577,7 +577,7 @@ canvasWrapper.addEventListener("touchstart", function(e) {
 
     if (e.touches.length === 2) {
         // Pinch-to-zoom
-        startDistance = getDistance(e.touches[0], e.touches[1]);
+        //startDistance = getDistance(e.touches[0], e.touches[1]);
     } else if (e.touches.length === 1) {
         // Single finger for panning
         isPanning = true;
@@ -595,14 +595,14 @@ canvasWrapper.addEventListener("touchmove", function(e) {
 
     if (e.touches.length === 2) {
         // Handle pinch-to-zoom
-        e.preventDefault();
+        /*e.preventDefault();
 
         const newDistance = getDistance(e.touches[0], e.touches[1]);
         const pinchScale = newDistance / startDistance;
         scale = Math.min(3, Math.max(0.3, scale * pinchScale * ( pinchScaleFactor))); // Restrict zoom levels
         applyTransform();
 
-        startDistance = newDistance; // Update for the next move
+        startDistance = newDistance; // Update for the next move*/
 
 
     } else if (e.touches.length === 1 && isPanning) {
@@ -674,6 +674,24 @@ document.querySelector('#zoom-in').addEventListener('click', function() {
 document.querySelector('#zoom-out').addEventListener('click', function() {
     scale = Math.max(0.3, scale - 0.1); // Zoom out
     applyTransform();
+});
+
+interact(canvasWrapper)
+.gesturable({
+    listeners: {
+      move (event) {
+        // Calculate the new scale by multiplying the event.scale with the initial scale
+        let newScale = scale * event.scale;
+
+        // Constrain the scale to a reasonable range
+        newScale = Math.max(0.3, Math.min(3.0, newScale));
+
+        // Update the global scale variable
+        scale = newScale;
+
+        applyTransform();
+      }
+    }
 });
 
 window.addEventListener('resize', function() {
