@@ -27,6 +27,7 @@
             width: 100vw;
             zoom: normal;
             overflow: hidden;
+            touch-action: none;
         }
         body {
             background-color: #1a1a1a;
@@ -305,6 +306,13 @@
 
             #info-popup {
                 width: 75%;
+                top: 60%;
+                left: 50%;
+                transform: translate(-50%, -60%);
+            }
+
+            #info-popup p:last-child {
+                display: none;
             }
 
             select {
@@ -355,10 +363,10 @@
             <h2>Select a Canvas<br>to Start!</h2>
         </div>
         <div id="info-popup">
-            <p>Cick/Tap and drag to pan</p>
+            <p>Cick/Tap + drag to pan</p>
             <p>Scroll/Pinch to zoom</p>
-            <p>Drag from top of note to move</p>
-            <p>Drag from left or bottom of note to resize</p>
+            <p>Click + drag to move note</p>
+            <p>Click + drag from left or bottom of note to resize</p>
         </div>
     </div>
 
