@@ -672,8 +672,8 @@ interact(canvasWrapper)
         const midY = (event.touches[0].clientY + event.touches[1].clientY) / 2 - rect.top;
 
         // Calculate the new translation to keep the zoom centered on the midpoint, update global x and y vars
-        translateX -= (midX / newScale - midX / startScale);
-        translateY -= (midY / newScale - midY / startScale);
+        translateX -= (midX / newScale - midX / scale);
+        translateY -= (midY / newScale - midY / scale);
 
         // Update the global scale variable
         scale = newScale;
