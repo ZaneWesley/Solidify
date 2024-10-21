@@ -46,14 +46,15 @@
         }
 
         select {
-            background-color: #1a1a1a;
-            background-image: url(data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20448%22%20enable-background%3D%22new%200%200%20256%20448%22%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E.arrow%7Bfill%3A%23ffffff%3B%7D%3C%2Fstyle%3E%3Cpath%20class%3D%22arrow%22%20d%3D%22M255.9%20168c0-4.2-1.6-7.9-4.8-11.2-3.2-3.2-6.9-4.8-11.2-4.8H16c-4.2%200-7.9%201.6-11.2%204.8S0%20163.8%200%20168c0%204.4%201.6%208.2%204.8%2011.4l112%20112c3.1%203.1%206.8%204.6%2011.2%204.6%204.4%200%208.2-1.5%2011.4-4.6l112-112c3-3.2%204.5-7%204.5-11.4z%22%2F%3E%3C%2Fsvg%3E%0A);
+            background-color: #121212;
+            background-image: url(data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20448%22%20enable-background%3D%22new%200%200%20256%20448%22%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E.arrow%7Bfill%3A%237edd9a%3B%7D%3C%2Fstyle%3E%3Cpath%20class%3D%22arrow%22%20d%3D%22M255.9%20168c0-4.2-1.6-7.9-4.8-11.2-3.2-3.2-6.9-4.8-11.2-4.8H16c-4.2%200-7.9%201.6-11.2%204.8S0%20163.8%200%20168c0%204.4%201.6%208.2%204.8%2011.4l112%20112c3.1%203.1%206.8%204.6%2011.2%204.6%204.4%200%208.2-1.5%2011.4-4.6l112-112c3-3.2%204.5-7%204.5-11.4z%22%2F%3E%3C%2Fsvg%3E%0A);
             background-position: right 10px center;
             background-repeat: no-repeat;
             background-size: auto 50%;
             border-radius: 2px;
-            border: 1px solid #fff;
-            color: #ffffff;
+            border: 1px solid #7edd9a;
+            /*color: #ffffff;*/
+            color: #7edd9a;
             font-weight: 600;
             padding: 10px 30px 10px 10px;
             outline: none;
@@ -95,8 +96,9 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            background-color: #363838;
-            color: #d2d3d3;
+            background-color: #252626;
+            /*color: #d2d3d3;*/
+            color: #7edd9a;
             padding: 1em;
             border-radius: 10px;
         }
@@ -229,16 +231,18 @@
             justify-content: flex-end;
             align-items: center;
             align-self: stretch;
+
         }
 
-        .control-btn i:hover, .control-btn button:hover {
+        .control-btn i:hover {
             color: #fff;
         }
 
-        .zoom-controls i, #delete-canvas i {
+        .control-btn i:not(#new-note i) {
             padding: 1em;
             cursor: pointer;
             font-size: 1em;
+            color: #7edd9a;
         }
 
         #new-note {
@@ -252,6 +256,38 @@
         #delete-canvas {
             color: rgba(244, 244, 244, 0.349);
             font-size: 1em;
+        }
+
+        #canvas-menu {
+            position: fixed;
+            bottom: 3em;
+            left: 0;
+            width: 100vw;
+            background-color: #252626;
+            color: #F4F4F4;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-start;
+            padding: 2em 1em;
+            display: none;
+        }
+
+        #canvas-menu.open {
+            display: flex;
+        }
+
+        #canvas-menu span {
+            padding: 0.5em;
+            cursor: pointer;
+        }
+
+        #canvas-menu span:hover {
+            color: #7edd9a;
+        }
+
+        #canvas-menu span i {
+            margin-right: 1em;
         }
 
         .color-picker {
@@ -316,7 +352,7 @@
             }
 
             select {
-                background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%23ffffff%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M0%201.5V13a1%201%200%200%200%201%201V1.5a.5.5%200%200%201%20.5-.5H14a1%201%200%200%200-1-1H1.5A1.5%201.5%200%200%200%200%201.5%22%2F%3E%3Cpath%20d%3D%22M3.5%202A1.5%201.5%200%200%200%202%203.5v11A1.5%201.5%200%200%200%203.5%2016h6.086a1.5%201.5%200%200%200%201.06-.44l4.915-4.914A1.5%201.5%200%200%200%2016%209.586V3.5A1.5%201.5%200%200%200%2014.5%202zm6%208.5a1%201%200%200%201%201-1h4.396a.25.25%200%200%201%20.177.427l-5.146%205.146a.25.25%200%200%201-.427-.177z%22%2F%3E%3C%2Fsvg%3E");
+                background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%237edd9a%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M0%201.5V13a1%201%200%200%200%201%201V1.5a.5.5%200%200%201%20.5-.5H14a1%201%200%200%200-1-1H1.5A1.5%201.5%200%200%200%200%201.5%22%2F%3E%3Cpath%20d%3D%22M3.5%202A1.5%201.5%200%200%200%202%203.5v11A1.5%201.5%200%200%200%203.5%2016h6.086a1.5%201.5%200%200%200%201.06-.44l4.915-4.914A1.5%201.5%200%200%200%2016%209.586V3.5A1.5%201.5%200%200%200%2014.5%202zm6%208.5a1%201%200%200%201%201-1h4.396a.25.25%200%200%201%20.177.427l-5.146%205.146a.25.25%200%200%201-.427-.177z%22%2F%3E%3C%2Fsvg%3E");
                 border: none;
                 width: 10px;
                 /*font-size: 1.5em;*/
@@ -331,6 +367,7 @@
     <select id="canvasSelect" onchange="switchCanvas()">
         <option disabled selected hidden value> Select Canvas</option>
         <option value="~~newCanvasRequest">Create New</option>
+        <option value="~~loadFromFile">Load from File</option>
     </select>
 
     <div class="canvas-wrapper">
@@ -341,20 +378,31 @@
 
     <div class="container-buttons">
         <div class="control-btn zoom-controls">
-            <div>
-                <i id="zoom-in" class="fa-solid fa-plus"></i>
-                <i id="zoom-out" class="fa-solid fa-minus"></i>
-            </div>
-            <!--Zoom -->
+            <span id="zoom-in"><i class="fa-solid fa-plus"></i></span>
+            <!--Zoom in -->
+        </div>
+        <div class="control-btn zoom-controls">
+            <span id="zoom-out"><i class="fa-solid fa-minus"></i></span>
+            <!-- Zoom out -->
         </div>
         <div class="control-btn">
             <span id="new-note"><i class="fa-regular fa-note-medical"></i></span>
             <!-- New Idea! -->
         </div>
         <div class="control-btn">
+            <span id="menu-btn"><i class="fa-solid fa-bars"></i></span>
+            <!-- Canvas Menu -->
+        </div>
+        <div class="control-btn">
             <span id="delete-canvas"><i class="fa-solid fa-trash"></i></span>
             <!-- Delete Canvas -->
         </div>
+    </div>
+
+    <div id="canvas-menu">
+        <span id="create-canvas" onclick="document.getElementById('canvasSelect').value='~~newCanvasRequest'; switchCanvas()"><i class="fa-light fa-file-circle-plus"></i> Create new canvas</span>
+        <span id="download-canvas"><i class="fa-light fa-laptop-arrow-down"></i> Download canvas</span>
+        <span id="rename-canvas"><i class="fa-light fa-pen-to-square"></i> Rename canvas</span>
     </div>
 
     <div id="precanvas-popup">
