@@ -13,7 +13,7 @@ function loadCanvases() {
     const canvasSelect = document.getElementById('canvasSelect');
 
     // Clear previous options (except the default ones)
-    while (canvasSelect.options.length > 2) {
+    while (canvasSelect.options.length > 3) {
         canvasSelect.remove(2);
     }
 
@@ -103,6 +103,35 @@ function deleteCanvas() {
     }
 }
 
+// Load a canvas from an offline file
+function loadCanvasFromFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const loadedData = JSON.parse(e.target.result);
+            const canvasName = Object.keys(loadedData)[0]; // Assuming only one canvas in the file
+            const canvasContent = loadedData[canvasName];
+
+            // Save the loaded canvas data to local storage
+            const canvasData = JSON.parse(localStorage.getItem(canvasStorageKey)) || {};
+            canvasData[canvasName] = canvasContent;
+            localStorage.setItem(canvasStorageKey, JSON.stringify(canvasData));
+
+            // Switch to the loaded canvas
+            loadCanvases();
+            currentCanvas = canvasName;
+            document.getElementById("canvasSelect").value = canvasName;
+            switchCanvas();
+        } catch (err) {
+            alert("ERROR: Invalid or currupt file");
+        }
+    };
+    reader.readAsText(file);
+}
+
 /*
     *   Canvas Management    *
 */
@@ -131,6 +160,18 @@ function switchCanvas() {
             // if new canvas initiative was canceled, just switch back to the currentCanvas
             document.getElementById("canvasSelect").value = currentCanvas;
         }
+    // else if selected is a load canvas request
+    } else if(selectedCanvas == "~~loadFromFile") {
+        // <input type="file" id="fileInput" style="display:none" accept=".json" onchange="loadCanvasFromFile(event)">
+        var ipt = document.createElement('input');
+        ipt.type = "file";
+        ipt.accept=".json";
+        ipt.style.display='none';
+        ipt.onchange = function(e) {loadCanvasFromFile(e)}
+        document.body.append(ipt);
+        ipt.click();
+        ipt.remove();
+
     } else if (selectedCanvas) {
         currentCanvas = selectedCanvas;
         console.log(`Loading canvas "${selectedCanvas}"...`);
@@ -342,6 +383,29 @@ function deleteStickyNote(noteId) {
     const note = document.getElementById(noteId);
     note.remove();
     saveCanvasToLocalStorage(); // Save changes after deletion
+}
+
+// Function to download the current canvas data as a file
+function downloadCanvas() {
+    if (!currentCanvas) {
+        alert("Please select or create a canvas first!");
+        return;
+    }
+
+    const canvasData = JSON.parse(localStorage.getItem(canvasStorageKey)) || {};
+    const currentCanvasData = canvasData[currentCanvas] || {};
+
+    const jsonString = JSON.stringify({ [currentCanvas]: currentCanvasData }, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = currentCanvas + ".json"; // File name based on canvas name
+    link.click();
+    
+    // Clean up the URL object
+    URL.revokeObjectURL(url);
 }
 
 /*
@@ -611,6 +675,15 @@ document.getElementById("canvasTitle").addEventListener('dblclick', function(e) 
     if(currentCanvas) {
         this.contentEditable=true;
         this.focus();
+        selectElementContents(this);
+    }
+
+    function selectElementContents(el) {
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
     }
 });
 
@@ -650,6 +723,16 @@ document.querySelector('#zoom-in').addEventListener('click', function() {
 document.querySelector('#zoom-out').addEventListener('click', function() {
     scale = Math.max(0.3, scale - 0.1); // Zoom out
     applyTransform();
+});
+
+document.querySelector('#menu-btn').addEventListener('click', function() {
+    document.getElementById("canvas-menu").classList.toggle("open");
+});
+
+document.querySelector('#download-canvas').addEventListener('click', downloadCanvas);
+
+document.querySelector('#rename-canvas').addEventListener('click', function() {
+    var event = new MouseEvent('dblclick', { 'view': window,'bubbles': true,'cancelable': true});document.getElementById('canvasTitle').dispatchEvent(event);
 });
 
 interact(canvasWrapper)
