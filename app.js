@@ -4,7 +4,8 @@
 
 let currentCanvas = null;
 let noteId = 0;
-let canvasStorageKey = "solidifyCanvas"
+let canvasStorageKey = "solidifyCanvas";
+let tagColors = {};
 
 
 // Load canvases from localStorage
@@ -41,7 +42,8 @@ function saveCanvasToLocalStorage(newCanvasName = currentCanvas) {
         left: note.style.left,
         width: note.style.width,
         height: note.style.height,
-        color: note.querySelector(".color-picker").value
+        color: note.querySelector(".color-picker").value,
+        tags: note.getAttribute("tags") ? note.getAttribute("tags").split(",") : [] // Save tags as an array
     }));
 
     // Retrieve current canvas transformation state (translation and scale)
@@ -63,7 +65,8 @@ function saveCanvasToLocalStorage(newCanvasName = currentCanvas) {
     // Save both the notes and the transformation for the (new) canvas
     canvasData[newCanvasName] = {
         notes: notesArray,
-        transform: canvasTransform // Include the transformation state
+        transform: canvasTransform, // Include the transformation state
+        tagColors: tagColors
     };
 
     // Save the updated canvas data to localStorage
@@ -192,6 +195,8 @@ function loadNotesFromLocalStorage() {
     const notesArray = currentCanvasData.notes || [];
     const transform = currentCanvasData.transform || { translateX: 0, translateY: 0, scale: 1 };
 
+    tagColors = currentCanvasData.tagColors || {};
+
     document.getElementById('canvasTitle').innerText = currentCanvas;
 
     // Apply the saved transform (translation and scale) to the canvas
@@ -207,10 +212,15 @@ function loadNotesFromLocalStorage() {
         const newNote = document.createElement("div");
         newNote.className = "note";
         newNote.id = note.id;
+        newNote.setAttribute('tags', note.tags.join(",")); // Store tags in data attribute
         newNote.innerHTML = `
             <div class="content">${note.content}</div>
+            <div class="tags-section">
+                <div class="tags-list"></div>
+            </div>
             <div class="controls">
                 <input type="color" class="color-picker" onchange="changeNoteColor('${note.id}', this.value)" value="${note.color}">
+                <input type="text" class="tag-input" placeholder="Add tags" onblur="addTag(this, '${note.id}')">
                 <span class="delete" onclick="deleteStickyNote('${note.id}')"><i class="fa-light fa-trash-can"></i></span>
             </div>
         `;
@@ -224,6 +234,7 @@ function loadNotesFromLocalStorage() {
 
         addNoteHandlers(newNote);
         container.appendChild(newNote);
+        renderTags(newNote);
 
         // Initialize Quill editor with the saved content
         const quill = new Quill(newNote.querySelector('.content'), {
@@ -273,30 +284,8 @@ function updateNoteIdCounter(notesArray) {
     *   Note Management    *
 */
 
-// Connect linked notes
-var drawConnector = function(divA, divB) {
-    var connector = document.createElement('div');
-  var posnA = {
-    x: divA.offsetLeft + divA.offsetWidth,
-    y: divA.offsetTop  + divA.offsetHeight / 2
-  };
-  var posnB = {
-    x: divB.offsetLeft,
-    y: divB.offsetTop  + divA.offsetHeight / 2
-  };
-  var dStr =
-      "M" +
-      (posnA.x      ) + "," + (posnA.y) + " " +
-      "C" +
-      (posnA.x + 100) + "," + (posnA.y) + " " +
-      (posnB.x - 100) + "," + (posnB.y) + " " +
-      (posnB.x      ) + "," + (posnB.y);
-  connector.setAttribute("d", dStr);
-  document.body.append(connector);
-}
 
-
-// Create a new sticky note
+// Create a new note
 function createStickyNote() {
     if (!currentCanvas) {
         alert("Please select or create a canvas first!");
@@ -306,13 +295,18 @@ function createStickyNote() {
     const container = document.getElementById("container");
     const note = document.createElement("div");
     let noteColors = ["#81dde9", "#e7e981", "#7edd9a", "#a081e9", "#d281e9", "#e98181", "#e9be81"]; // blue, yellow, green, purple, pink, red, orange
-    let chosenColor = noteColors[Math.floor(Math.random()*noteColors.length)];
+    //let chosenColor = noteColors[Math.floor(Math.random()*noteColors.length)];
+    let chosenColor = "#7edd9a";//theme green
     note.className = "note";
     note.id = "note_" + noteId;
     note.innerHTML = `
             <div class="content" onclick="hidePlaceholder(this, 'Your note content')"></div>
+            <div class="tags-section">
+                <div class="tags-list"></div>
+            </div>
             <div class="controls">
                 <input type="color" class="color-picker" value="${chosenColor}" onchange="changeNoteColor('${note.id}', this.value)">
+                <input type="text" class="tag-input" placeholder="Add tags" onblur="addTag(this, '${note.id}')">
                 <span class="delete" onclick="deleteStickyNote('${note.id}')"><i class="fa-light fa-trash-can"></i></span>
             </div>
         `;
@@ -378,11 +372,112 @@ function hidePlaceholder(element, placeholder) {
     }*/
 }
 
-// Delete a sticky note
+// Delete and remove note
 function deleteStickyNote(noteId) {
     const note = document.getElementById(noteId);
-    note.remove();
-    saveCanvasToLocalStorage(); // Save changes after deletion
+    note.classList.add('deleting');
+    setTimeout(function() {
+        note.remove();
+        saveCanvasToLocalStorage(); // Save changes after deletion
+    }, 1000);
+}
+
+// Tag mods
+function addTag(inputElement, noteId) {
+    const note = document.getElementById(noteId);
+    let tags = note.getAttribute("tags") ? note.getAttribute("tags").split(",") : [];
+    const newTag = inputElement.value.trim();
+    if (newTag && !tags.includes(newTag)) {
+        tags.push(newTag);
+        note.setAttribute("tags", tags.join(","));
+        renderTags(note);
+        updateNoteColors();
+        saveCanvasToLocalStorage();
+    }
+    inputElement.value = "";
+    window.scrollTo(0, 0);
+    document.body.style.zoom=1.0;
+}
+
+function renderTags(note) {
+    const tagsList = note.querySelector(".tags-list");
+    let tags = note.getAttribute("tags") ? note.getAttribute("tags").split(",") : [];
+    tagsList.innerHTML = tags.map(tag => `
+        <span class="tag">
+            ${tag} <span class="remove-tag" onclick="removeTag('${note.id}', '${tag}')">&times;</span>
+        </span>
+    `).join("");
+    renderTagColorControls();
+}
+
+function removeTag(noteId, tag) {
+    isEditingOrMovingNote = true;
+    const note = document.getElementById(noteId);
+    let tags = note.getAttribute("tags") ? note.getAttribute("tags").split(",") : [];
+    tags = tags.filter(t => t !== tag);
+    note.setAttribute("tags", tags.join(","));
+    renderTags(note);
+    if(tagColors[tag] == note.querySelector('.color-picker').value) {
+        note.querySelector('.color-picker').value = "#7edd9a";
+        var event = new Event('change');
+        note.querySelector('.color-picker').dispatchEvent(event);
+    }
+    saveCanvasToLocalStorage();
+}
+
+// Create tag color picker UI and handle color changes
+function renderTagColorControls() {
+    const tagColorContainer = document.getElementById("tag-controls");
+    const allTags = getAllUniqueTags(); // Get all unique tags
+
+    tagColorContainer.innerHTML = ""; // Clear previous color controls
+
+    allTags.forEach(tag => {
+        const color = tagColors[tag] || "#81dde9"; // Default color is blue if not set
+        const tagColorDiv = document.createElement("div");
+        tagColorDiv.className = "tag-color-control";
+        tagColorDiv.innerHTML = `
+            <span>${tag}</span>
+            <input type="color" value="${color}" onchange="setTagColor('${tag}', this.value)">
+        `;
+        tagColorContainer.appendChild(tagColorDiv);
+    });
+}
+
+// Save tag color to localStorage and update note colors
+function setTagColor(tag, color) {
+    tagColors[tag] = color;
+    saveCanvasToLocalStorage();
+    updateNoteColors(); // Apply colors to notes based on tags
+}
+
+// Get all unique tags from the notes on the canvas
+function getAllUniqueTags() {
+    const allTags = new Set();
+    const notes = document.querySelectorAll(".note");
+    notes.forEach(note => {
+        const tags = note.getAttribute('tags') ? note.getAttribute('tags').split(",") : [];
+        tags.forEach(tag => allTags.add(tag));
+    });
+    return Array.from(allTags);
+}
+
+// Update the background color of notes based on the assigned tag colors
+function updateNoteColors() {
+    const notes = document.querySelectorAll(".note");
+    notes.forEach(note => {
+        const tags = note.getAttribute('tags') ? note.getAttribute('tags').split(",") : [];
+        let appliedColor = note.querySelector('.color-picker').value; // Default note color
+        tags.forEach(tag => {
+            if (tagColors[tag]) {
+                appliedColor = tagColors[tag]; // Apply the color if tag color is set
+            }
+        });
+        //note.style.backgroundColor = appliedColor;
+        note.querySelector('.color-picker').value = appliedColor;
+        var event = new Event('change');
+        note.querySelector('.color-picker').dispatchEvent(event);
+    });
 }
 
 // Function to download the current canvas data as a file
@@ -415,7 +510,7 @@ function downloadCanvas() {
 // Drag functionality for notes is noe in event handlers
 
 
-// Color picker for sticky note background
+// Color picker for note background
 function changeNoteColor(noteId, color) {
     const note = document.getElementById(noteId);
     var bgCol = hexToRgb(color);
@@ -453,13 +548,26 @@ function addNoteHandlers(elem) {
             elem.querySelector('.controls').style.display="flex";
         }
     });
+    elem.querySelector('.tag-input').addEventListener('keyup', function(e) {
+        if(e.key == "Enter") {
+            this.blur();
+        }
+    })
     // Initialize inneract
+    var snapGridSize = 0;// 0 to no snap, 30 wnen snap
     interact(elem).draggable({
-        inertia: true,
+        inertia: false,
         modifiers: [
             interact.modifiers.restrict({
                 //restriction: 'parent', // Restrict drag to parent container
                 endOnly: true
+            }),
+            interact.modifiers.snap({
+                targets: [
+                  interact.snappers.grid({ x: snapGridSize, y: snapGridSize })
+                ],
+                range: Infinity,
+                relativePoints: [ { x: 0, y: 0 } ]
             })
         ],
         listeners: {
@@ -526,7 +634,7 @@ function addNoteHandlers(elem) {
                     max: { width: 800, height: 600 }
                 })
             ],
-            inertia: true
+            inertia: false
         });
     }
 }
@@ -567,10 +675,11 @@ document.addEventListener("mousedown", function(e) {
             elem.style.display = "none";
             elem.parentNode.querySelector('.ql-toolbar').style.display="none";
         });
+        saveCanvasToLocalStorage();
     }
 });
 
-document.addEventListener("mouseup", function() {
+document.addEventListener("mouseup", function(e) {
     isEditingOrMovingNote = false;
 });
 
@@ -729,11 +838,38 @@ document.querySelector('#menu-btn').addEventListener('click', function() {
     document.getElementById("canvas-menu").classList.toggle("open");
 });
 
+document.querySelector('#create-canvas').addEventListener('click', function() {
+    document.getElementById('canvasSelect').value='~~newCanvasRequest';
+    switchCanvas();
+    document.querySelector('#canvas-menu').classList.remove('open');
+});
+
 document.querySelector('#download-canvas').addEventListener('click', downloadCanvas);
 
 document.querySelector('#rename-canvas').addEventListener('click', function() {
-    var event = new MouseEvent('dblclick', { 'view': window,'bubbles': true,'cancelable': true});document.getElementById('canvasTitle').dispatchEvent(event);
+    var event = new MouseEvent('dblclick', { 'view': window,'bubbles': true,'cancelable': true});
+    document.getElementById('canvasTitle').dispatchEvent(event);
+    document.querySelector('#canvas-menu').classList.remove('open');
 });
+
+document.querySelector('#recenter-canvas').addEventListener('click', function() {
+    translateX = 0; translateY = 0;
+    applyTransform();
+    document.querySelector('#canvas-menu').classList.remove('open');
+});
+
+document.querySelector('#color-tags').addEventListener('click', function() {
+    document.querySelector('#canvas-menu').classList.remove('open');
+    document.querySelector('.tag-controls-container').classList.add('open');
+});
+
+/*document.querySelector('#snap-grid-toggle').addEventListener('change', function() {
+    if(this.checked) {
+        snapGridSize = 30
+    } else {
+        snapGridSize = 0;
+    }
+});*/
 
 interact(canvasWrapper)
 .gesturable({
@@ -766,6 +902,9 @@ interact(canvasWrapper)
     }
 });
 
+
+
+
 window.addEventListener('resize', function() {
     // Reapply the canvas transform (translateX, translateY, scale) and resave it so notes are not lost
     applyTransform();
@@ -782,7 +921,3 @@ window.addEventListener("DOMContentLoaded", function () {
     loadCanvases(); // Load the first canvas if any
     //switchCanvas();
 });
-
-function linkNotes() {
-    drawConnector(document.querySelector('#note_0'), document.querySelector('#note_1'));
-}
