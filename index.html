@@ -43,6 +43,7 @@
             position: fixed;
             top: 1em;
             left: 1em;
+            z-index: 99;
         }
 
         select {
@@ -140,6 +141,7 @@
             cursor: pointer;
             text-align: center;
             width: 100%;
+            z-index: 98;
         }
 
         .note {
@@ -156,6 +158,37 @@
             cursor: grab;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            animation: push 0.3s ease forwards;
+        }
+
+        @keyframes push{
+            0% {transform: scale(0); opacity: 0;}
+            82% {transform: scale(1.1); opacity: 0.5;}
+            87% {transform: scale(1); opacity: 1;}
+            100% {transform: unset; opacity: 1;}
+        }
+
+        .note.deleting {
+            animation: bubblePop 0.4s ease forwards;
+        }
+
+        @keyframes bubblePop {
+            0% {
+            transform: scale(1);
+            opacity: 1;
+            }
+            20% {
+            transform: scale(0);
+            opacity: 0.6;
+            }
+            100% {
+            transform: scale(0.5);
+            opacity: 0;
+            }
+        }
+
+        .note:has(.ql-editor:focus)  {
+            z-index: 11;
         }
 
         .note .content[contenteditable="true"] {
@@ -223,6 +256,7 @@
             bottom: 0;
             left: 0;
             background-color: #121212;
+            z-index: 99;
         }
 
         .control-btn {
@@ -275,6 +309,18 @@
 
         #canvas-menu.open {
             display: flex;
+            animation: 0.3s fadeInUp ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0%);
+                opacity: 1;
+            }
         }
 
         #canvas-menu span {
@@ -290,25 +336,124 @@
             margin-right: 1em;
         }
 
-        .color-picker {
-            width: 20px;
-            height: 20px;
+        input[type="color"] {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
             border: 2px solid #1a1a1a;
             border-radius: 50%;
-            padding: 1em;
+            /*padding: 1em;*/
             appearance: none;
+            -webkit-appearance: none;
             cursor: pointer;
             outline: none;
         }
 
-        .color-picker::-webkit-color-swatch-wrapper {
+        input[type="color"]::-webkit-color-swatch-wrapper {
             padding: 0;
         }
 
-        .color-picker::-webkit-color-swatch {
+        input[type="color"]::-webkit-color-swatch {
             border: none;
             border-radius: 50%;
             padding: 0;
+        }
+
+        .controls input[type="text"] {
+            /*display: none;*/
+            width: 60%;
+            background-color: rgba(0,0,0,0.3);
+            outline: none;
+            border: 1px solid rgba(0,0,0,0.5);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 10px 20px;
+
+        }
+
+        .tags-section {
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            /*display: none;*/
+        }
+        
+        .tags-section .tags-list {
+            margin-left: 5px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .tags-section .tags-list .tag {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 2px 8px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .tags-section .tags-list .tag .remove-tag {
+            margin-left: 8px;
+            cursor: pointer;
+            /* color: red; */
+            font-weight: bold;
+        }
+
+        body:has(.tag-controls-container.open) .canvas-wrapper, body:has(#canvas-menu.open) .canvas-wrapper {
+            opacity: 0.5;
+        }
+
+        .tag-controls-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #252626;
+            color: #F4F4F4;
+            padding: 1em;
+            width: 80%;
+            columns: auto;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .tag-controls-container.open {
+            display: block;
+        }
+
+        .tag-controls-container h3 {
+            column-span: all;
+            text-align: center;
+            margin-bottom: 1em;
+        }
+
+        .tag-controls-container #tag-controls {
+            width: 60%;
+            margin: 0 auto;
+        }
+
+        .tag-controls-container .tag-color-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1em;
+            column-gap: 1em;
+        }
+
+        .tag-controls-container button {
+            border: 1px solid #7edd9a;
+            border-radius: 10px;
+            padding: 1em;
+            color: #7edd9a;
+            background-color: transparent;
+            cursor: pointer;
+            float: right;
         }
 
         /* Quill Retyles */
@@ -330,6 +475,7 @@
         .ql-container {
             border: none!important;
             width: 100%;
+            height: calc(100% - 40px);
         }
 
         /* Mobile Styles */
@@ -357,6 +503,10 @@
                 width: 10px;
                 /*font-size: 1.5em;*/
                 transform: scale(1.5);
+            }
+
+            .tag-controls-container #tag-controls {
+                width: 100%;
             }
         }
     </style>
@@ -400,9 +550,18 @@
     </div>
 
     <div id="canvas-menu">
-        <span id="create-canvas" onclick="document.getElementById('canvasSelect').value='~~newCanvasRequest'; switchCanvas()"><i class="fa-light fa-file-circle-plus"></i> Create new canvas</span>
+        <span id="create-canvas"><i class="fa-light fa-file-circle-plus"></i> Create new canvas</span>
         <span id="download-canvas"><i class="fa-light fa-laptop-arrow-down"></i> Download canvas</span>
         <span id="rename-canvas"><i class="fa-light fa-pen-to-square"></i> Rename canvas</span>
+        <span id="recenter-canvas"><i class="fa-light fa-expand"></i> Recenter Canvas</span>
+        <span id="color-tags"><i class="fa-light fa-tag"></i> Manage Tags</span>
+        <!--<span id="snap-grid"><i class="fa-sharp fa-light fa-grid"></i> <label for="snap-grid-toggle">Snap to Grid</label> <input type="checkbox" id="snap-grid-toggle"></span>-->
+    </div>
+
+    <div class="tag-controls-container">
+        <h3>Manage Tags</h3>
+        <div id="tag-controls"></div>
+        <button onclick="this.parentNode.classList.remove('open')">Close</button>
     </div>
 
     <div id="precanvas-popup">
